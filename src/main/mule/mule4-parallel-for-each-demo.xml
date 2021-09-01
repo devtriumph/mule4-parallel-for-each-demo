@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8f394676-b546-494a-9a95-819aa995f1fc" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="mule4-parallel-for-each-demo-flow" doc:id="dbb6e486-fbfe-4a4b-a00a-912625b67f1f" >
+		<http:listener doc:name="HTTP Listener" doc:id="fb372899-ea7c-44d7-acac-d99cf96bb23d" config-ref="HTTP_Listener_config" path="/parallelForEach"/>
+		<set-variable value="#['Mule']" doc:name="Set Name Variable" doc:id="9550319b-d39d-4ff3-a36e-f10b213f152d" variableName="name"/>
+		<set-payload value="#[['English', 'Telugu', 'Kannada']]" doc:name="['english', 'telugu', 'kannada']" doc:id="d7ee2f3f-f5a0-4405-8131-195f040dcb04" />
+		<parallel-foreach doc:name="Parallel For Each" doc:id="3d97ff9f-3bbc-4b98-80b4-b399e41611fe" >
+			<choice doc:name="Choice" doc:id="f073e628-fc0a-47af-b3cd-eaed6235e248" >
+				<when expression="#[payload == 'English']">
+					<logger level="INFO" doc:name="Log Payload" doc:id="78f6fc50-209d-447c-b4ae-8eec3cc68bd9" message="#['Date ' ++ now() as String {format : &quot;dd-MM-yyyy HH:mm:ss&quot;} ++ ' , ' ++ 'Payload is ' ++ payload ++ ' and ' ++ ' Variable is ' ++ vars.name]"/>
+				</when>
+				<when expression='#[payload == "Telugu"]'>
+					<logger level="INFO" doc:name="Log Payload" doc:id="e8077be7-6ca3-450f-bc8e-35ed581fb00b" message="#['Date ' ++ now() as String {format : &quot;dd-MM-yyyy HH:mm:ss&quot;} ++ ' , ' ++ 'Payload is ' ++ payload ++ ' and ' ++ ' Variable is ' ++ vars.name]"/>
+				</when>
+				<when expression="#[payload == 'Kannada']">
+					<set-variable value="#['Max']" doc:name="Override Name Variable" doc:id="065c5330-04f0-4978-a6c3-b6c58f79c3c0" variableName="name" />
+					<logger level="INFO" doc:name="Log Payload" doc:id="11e7cbeb-df5e-4fd3-abbf-3e84a25a49e9" message="#['Date ' ++ now() as String {format : &quot;dd-MM-yyyy HH:mm:ss&quot;} ++ ' , ' ++ 'Payload is ' ++ payload ++ ' and ' ++ ' Variable is ' ++ vars.name]" />
+				</when>
+				<otherwise>
+					<set-variable value="#['India']" doc:name="Set Country Variable" doc:id="7d1a524c-d076-4386-9493-0bf8a48aefce" variableName="country"/>
+					<logger level="INFO" doc:name="Log Variable" doc:id="820ca71a-557b-4ac2-aecf-a6d394889be1" message="#[vars.name]"/>
+				</otherwise>
+			</choice>
+		</parallel-foreach>
+		<logger level="INFO" doc:name="Log Name Variable" doc:id="f02b8792-2d1a-4ddf-8e87-869460d2b547" message="#[vars.name]"/>
+		<logger level="INFO" doc:name="Log Country Variable" doc:id="abc68f43-5230-4f8a-950c-1675d5e7a4d8" message="#[vars.country]"/>
+		<ee:transform doc:name="Set Response" doc:id="b0030321-7385-4d80-8282-d1bd5cc91f59" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
