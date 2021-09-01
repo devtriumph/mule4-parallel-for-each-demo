@@ -23,7 +23,15 @@ http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mu
 					<logger level="INFO" doc:name="Log Payload" doc:id="78f6fc50-209d-447c-b4ae-8eec3cc68bd9" message="#['Date ' ++ now() as String {format : &quot;dd-MM-yyyy HH:mm:ss&quot;} ++ ' , ' ++ 'Payload is ' ++ payload ++ ' and ' ++ ' Variable is ' ++ vars.name]"/>
 				</when>
 				<when expression='#[payload == "Telugu"]'>
-					<!-- <validation:is-number numberType="INTEGER" doc:name="Is number" doc:id="5f74506b-b123-4fc7-a9e0-c128e9e570c3" value="#[payload]"/> -->
+					<!-- <validation:is-number numberType="INTEGER" doc:name="Is number" doc:id="256f73e4-601c-48c0-844b-a9dd83506b16" value="#[payload]" /> -->
+					<!-- <try doc:name="Try" doc:id="9f87b360-e1d4-4cc8-a110-e09f7af2ea43" >
+						<validation:is-number numberType="INTEGER" doc:name="Is number" doc:id="5f74506b-b123-4fc7-a9e0-c128e9e570c3" value="#[payload]" />
+						<error-handler >
+							<on-error-continue enableNotifications="false" logException="false" doc:name="On Error Continue" doc:id="338c77f7-8834-45d7-9756-ef2858192cbf" >
+								<logger level="ERROR" doc:name="Log Error Message" doc:id="48ab96b8-b7d7-4d0c-adac-9b46868552ad" message="#[error.description]" />
+							</on-error-continue>
+						</error-handler>
+					</try> -->
 					<logger level="INFO" doc:name="Log Payload" doc:id="e8077be7-6ca3-450f-bc8e-35ed581fb00b" message="#['Date ' ++ now() as String {format : &quot;dd-MM-yyyy HH:mm:ss&quot;} ++ ' , ' ++ 'Payload is ' ++ payload ++ ' and ' ++ ' Variable is ' ++ vars.name]"/>
 				</when>
 				<when expression="#[payload == 'Kannada']">
@@ -43,6 +51,8 @@ http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mu
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
+//flatten(payload..payload) to merge the payload
+
 payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
@@ -56,7 +66,7 @@ output application/json
 {
 	code : error.errorMessage.attributes.statusCode default 500,
 	errorType: error.errorType.namespace ++ ':' ++ error.errorType.identifier,
-	message : error.detailedDescription,
+	message : error.description,
 	correlationId : correlationId
 }]]></ee:set-payload>
 					</ee:message>
