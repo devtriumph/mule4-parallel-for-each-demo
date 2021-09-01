@@ -1,15 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8f394676-b546-494a-9a95-819aa995f1fc" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
 	<flow name="mule4-parallel-for-each-demo-flow" doc:id="dbb6e486-fbfe-4a4b-a00a-912625b67f1f" >
-		<http:listener doc:name="HTTP Listener" doc:id="fb372899-ea7c-44d7-acac-d99cf96bb23d" config-ref="HTTP_Listener_config" path="/parallelForEach"/>
+		<http:listener doc:name="HTTP Listener" doc:id="fb372899-ea7c-44d7-acac-d99cf96bb23d" config-ref="HTTP_Listener_config" path="/parallelForEach">
+			<http:error-response statusCode="#[vars.httpStatus]">
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
 		<set-variable value="#['Mule']" doc:name="Set Name Variable" doc:id="9550319b-d39d-4ff3-a36e-f10b213f152d" variableName="name"/>
 		<set-payload value="#[['English', 'Telugu', 'Kannada']]" doc:name="['english', 'telugu', 'kannada']" doc:id="d7ee2f3f-f5a0-4405-8131-195f040dcb04" />
 		<parallel-foreach doc:name="Parallel For Each" doc:id="3d97ff9f-3bbc-4b98-80b4-b399e41611fe" >
@@ -18,6 +23,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 					<logger level="INFO" doc:name="Log Payload" doc:id="78f6fc50-209d-447c-b4ae-8eec3cc68bd9" message="#['Date ' ++ now() as String {format : &quot;dd-MM-yyyy HH:mm:ss&quot;} ++ ' , ' ++ 'Payload is ' ++ payload ++ ' and ' ++ ' Variable is ' ++ vars.name]"/>
 				</when>
 				<when expression='#[payload == "Telugu"]'>
+					<!-- <validation:is-number numberType="INTEGER" doc:name="Is number" doc:id="5f74506b-b123-4fc7-a9e0-c128e9e570c3" value="#[payload]"/> -->
 					<logger level="INFO" doc:name="Log Payload" doc:id="e8077be7-6ca3-450f-bc8e-35ed581fb00b" message="#['Date ' ++ now() as String {format : &quot;dd-MM-yyyy HH:mm:ss&quot;} ++ ' , ' ++ 'Payload is ' ++ payload ++ ' and ' ++ ' Variable is ' ++ vars.name]"/>
 				</when>
 				<when expression="#[payload == 'Kannada']">
@@ -40,5 +46,26 @@ output application/json
 payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b3ee51c8-4847-4a5b-98d7-ec77608f8bd0" >
+				<ee:transform doc:name="Set Error Response" doc:id="b341d36e-9bda-4a4b-b995-3032f5b82638" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	code : error.errorMessage.attributes.statusCode default 500,
+	errorType: error.errorType.namespace ++ ':' ++ error.errorType.identifier,
+	message : error.detailedDescription,
+	correlationId : correlationId
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="httpStatus" ><![CDATA[error.errorMessage.attributes.statusCode default 500]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<logger level="ERROR" doc:name="Log Error Message" doc:id="10ccb5a6-7b2f-4982-b147-de7bf043903e" message="#[payload]"/>
+			</on-error-propagate>
+		</error-handler>
 	</flow>
 </mule>
